@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Price Target Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .calculator {
+            background-color: #f5f5f5;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+            position: relative;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        
+        button:hover {
+            background-color: #45a049;
+        }
+        
+        .results {
+            margin-top: 20px;
+            border-top: 1px solid #ddd;
+            padding-top: 15px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        .metric {
+            font-weight: bold;
+        }
+        
+        .reset {
+            background-color: #f44336;
+            margin-left: 10px;
+        }
+        
+        .reset:hover {
+            background-color: #e53935;
+        }
+        
+        .company-info {
+            margin-top: 5px;
+            padding: 10px;
+            background-color: #e8f4f8;
+            border-radius: 4px;
+            display: none;
+        }
+        
+        .company-name {
+            font-weight: bold;
+            font-size: 18px;
+        }
+        
+        .current-price {
+            font-size: 16px;
+            color: #1565C0;
+        }
+        
+        .price-change {
+            font-size: 14px;
+        }
+        
+        .positive {
+            color: #4CAF50;
+        }
+        
+        .negative {
+            color: #F44336;
+        }
+        
+        .loading {
+            margin-top: 5px;
+            font-style: italic;
+            color: #666;
+            display: none;
+        }
+        
+        .fetch-btn {
+            background-color: #2196F3;
+            margin-top: 5px;
+        }
+        
+        .fetch-btn:hover {
+            background-color: #0b7dda;
+        }
+        
+        .input-with-button {
+            display: flex;
+        }
+        
+        .input-with-button input {
+            flex: 1;
+            border-radius: 4px 0 0 4px;
+        }
+        
+        .input-with-button button {
+            margin-top: 0;
+            border-radius: 0 4px 4px 0;
+        }
+        
+        .refresh-price {
+            font-size: 14px;
+            margin-left: 10px;
+            cursor: pointer;
+            color: #2196F3;
+        }
+        
+        .price-timestamp {
+            font-size: 12px;
+            color: #666;
+            font-style: italic;
+            margin-top: 3px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Stock Price Target Calculator</h1>
+    
+    <div class="calculator">
+        <h2>Input Your Investment Details</h2>
+        
+        <div class="input-group">
+            <label for="ticker">Stock Ticker Symbol:</label>
+            <div class="input-with-button">
+                <input type="text" id="ticker" placeholder="e.g., COST" autocomplete="off">
+                <button class="fetch-btn" onclick="fetchStockData()">Fetch Data</button>
+            </div>
+            <div id="loading" class="loading">Loading stock data...</div>
+            <div id="companyInfo" class="company-info">
+                <div id="companyName" class="company-name"></div>
+                <div id="currentPrice" class="current-price"></div>
+                <div id="priceChange" class="price-change"></div>
+                <div id="priceTimestamp" class="price-timestamp"></div>
+            </div>
+        </div>
+        
+        <div class="input-group">
+            <label for="stockPrice">Manual Stock Price ($):</label>
+            <input type="number" id="stockPrice" step="0.01" min="0" placeholder="Use this if fetch data doesn't work">
+        </div>
+        
+        <div class="input-group">
+            <label for="averageCost">Your Average Cost per Share ($):</label>
+            <input type="number" id="averageCost" step="0.01" min="0" placeholder="Your purchase price">
+        </div>
+        
+        <div class="input-group">
+            <label for="shares">Number of Shares:</label>
+            <input type="number" id="shares" step="0.01" min="0" placeholder="Quantity of shares you own">
+        </div>
+        
+        <div class="input-group">
+            <label for="targetGain">Custom Target Gain Amount ($):</label>
+            <input type="number" id="targetGain" step="100" min="0" placeholder="e.g., 500">
+        </div>
+        
+        <button onclick="calculateTargets()">Calculate Price Targets</button>
+        <button onclick="resetForm()" class="reset">Reset</button>
+        
+        <div class="results" id="results" style="display: none;">
+            <h2>Your Investment Summary</h2>
+            <div id="summary"></div>
+            
+            <h2>Price Targets</h2>
+            <table id="targetTable">
+                <thead>
+                    <tr>
+                        <th>Target Gain ($)</th>
+                        <th>Required Price ($)</th>
+                        <th>Price Increase ($)</th>
+                        <th>Price Increase (%)</th>
+                    </tr>
+                </thead>
+                <tbody id="targetBody">
+                    <!-- Table rows will be added here by JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <script>
+        // API key for Alpha Vantage (free tier)
+        const API_KEY = "PKW2CDTLQNZKNBVD";
+        
+        // Fetch stock data from Alpha Vantage API
+        async function fetchStockData() {
+            const ticker = document.getElementById('ticker').value.trim().toUpperCase();
+            
+            if (!ticker) {
+                alert('Please enter a stock ticker symbol');
+                return;
+            }
+            
+            // Show loading indicator
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('companyInfo').style.display = 'none';
+            
+            try {
+                // Fetch company overview
+                const overviewUrl = `https://www.alphavantage.co/query?function=OVERVIEW&symbol=${ticker}&apikey=${API_KEY}`;
+                const overviewResponse = await fetch(overviewUrl);
+                const overviewData = await overviewResponse.json();
+                
+                // Fetch current price
+                const quoteUrl = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${ticker}&apikey=${API_KEY}`;
+                const quoteResponse = await fetch(quoteUrl);
+                const quoteData = await quoteResponse.json();
+                
+                // Hide loading indicator
+                document.getElementById('loading').style.display = 'none';
+                
+                // Check if we got valid data
+                if (overviewData.Name && quoteData['Global Quote']) {
+                    const companyName = overviewData.Name;
+                    const quote = quoteData['Global Quote'];
+                    const price = parseFloat(quote['05. price']);
+                    const change = parseFloat(quote['09. change']);
+                    const changePercent = quote['10. change percent'].replace('%', '');
+                    
+                    // Update company info display
+                    document.getElementById('companyName').textContent = companyName;
+                    document.getElementById('currentPrice').textContent = `Current Price: $${price.toFixed(2)}`;
+                    
+                    const priceChangeElement = document.getElementById('priceChange');
+                    if (change >= 0) {
+                        priceChangeElement.className = 'price-change positive';
+                        priceChangeElement.textContent = `+$${change.toFixed(2)} (${changePercent}%)`;
+                    } else {
+                        priceChangeElement.className = 'price-change negative';
+                        priceChangeElement.textContent = `-$${Math.abs(change).toFixed(2)} (${changePercent}%)`;
+                    }
+                    
+                    // Add timestamp
+                    const now = new Date();
+                    document.getElementById('priceTimestamp').textContent = `As of ${now.toLocaleString()}`;
+                    
+                    // Show company info
+                    document.getElementById('companyInfo').style.display = 'block';
+                    
+                    // Update the manual price input with the current price
+                    document.getElementById('stockPrice').value = price.toFixed(2);
+                } else {
+                    alert('Could not find stock data for ticker: ' + ticker);
+                }
+            } catch (error) {
+                console.error('Error fetching stock data:', error);
+                document.getElementById('loading').style.display = 'none';
+                alert('Error fetching stock data. Please try again or enter the price manually.');
+            }
+        }
+        
+        function calculateTargets() {
+            // Get input values
+            const ticker = document.getElementById('ticker').value.trim().toUpperCase() || 'Stock';
+            const companyName = document.getElementById('companyName').textContent || ticker;
+            const currentPrice = parseFloat(document.getElementById('stockPrice').value);
+            const averageCost = parseFloat(document.getElementById('averageCost').value);
+            const shares = parseFloat(document.getElementById('shares').value);
+            const customTargetGain = parseFloat(document.getElementById('targetGain').value);
+            
+            // Validate inputs
+            if (isNaN(currentPrice) || isNaN(shares) || shares <= 0 || currentPrice <= 0) {
+                alert('Please enter valid values for current price and number of shares.');
+                return;
+            }
+            
+            // Calculate current investment values
+            const marketValue = currentPrice * shares;
+            const costBasis = averageCost * shares;
+            const currentGainLoss = marketValue - costBasis;
+            const currentGainLossPercent = (currentGainLoss / costBasis) * 100;
+            
+            // Display summary
+            const summaryDiv = document.getElementById('summary');
+            summaryDiv.innerHTML = `
+                <p><span class="metric">Stock:</span> ${companyName} (${ticker})</p>
+                <p><span class="metric">Current Price:</span> $${currentPrice.toFixed(2)}</p>
+                <p><span class="metric">Shares Owned:</span> ${shares.toFixed(2)}</p>
+                <p><span class="metric">Average Cost:</span> $${isNaN(averageCost) ? '0.00' : averageCost.toFixed(2)}</p>
+                <p><span class="metric">Market Value:</span> $${marketValue.toFixed(2)}</p>
+                <p><span class="metric">Cost Basis:</span> $${isNaN(costBasis) ? '0.00' : costBasis.toFixed(2)}</p>
+                <p><span class="metric">Current Gain/Loss:</span> $${isNaN(currentGainLoss) ? '0.00' : currentGainLoss.toFixed(2)} 
+                   (${isNaN(currentGainLossPercent) ? '0.00' : currentGainLossPercent.toFixed(2)}%)</p>
+            `;
+            
+            // Create table with common targets and custom target
+            const targetBody = document.getElementById('targetBody');
+            targetBody.innerHTML = ''; // Clear previous results
+            
+            // Define standard target gains
+            const standardTargets = [100, 250, 500, 1000, 2500, 5000, 10000];
+            
+            // Add custom target if provided
+            if (!isNaN(customTargetGain) && customTargetGain > 0 && !standardTargets.includes(customTargetGain)) {
+                standardTargets.push(customTargetGain);
+            }
+            
+            // Sort targets
+            standardTargets.sort((a, b) => a - b);
+            
+            // Calculate and display each target
+            standardTargets.forEach(targetGain => {
+                const requiredGainPerShare = targetGain / shares;
+                const targetPrice = currentPrice + requiredGainPerShare;
+                const priceIncrease = targetPrice - currentPrice;
+                const priceIncreasePercent = (priceIncrease / currentPrice) * 100;
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>$${targetGain.toFixed(2)}</td>
+                    <td>$${targetPrice.toFixed(2)}</td>
+                    <td>$${priceIncrease.toFixed(2)}</td>
+                    <td>${priceIncreasePercent.toFixed(2)}%</td>
+                `;
+                targetBody.appendChild(row);
+            });
+            
+            // Show results
+            document.getElementById('results').style.display = 'block';
+        }
+        
+        function resetForm() {
+            document.getElementById('ticker').value = '';
+            document.getElementById('stockPrice').value = '';
+            document.getElementById('averageCost').value = '';
+            document.getElementById('shares').value = '';
+            document.getElementById('targetGain').value = '';
+            document.getElementById('companyInfo').style.display = 'none';
+            document.getElementById('results').style.display = 'none';
+        }
+        
+        // Add event listener for Enter key on ticker input
+        document.getElementById('ticker').addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                fetchStockData();
+            }
+        });
+    </script>
+</body>
+</html>
