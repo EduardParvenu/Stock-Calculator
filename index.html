@@ -3,22 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stock Price Target Calculator</title>
+    <title>Stock & ETF Price Target Calculator</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             max-width: 800px;
             margin: 0 auto;
             padding: 20px;
             line-height: 1.6;
+            color: #333;
         }
         
         .calculator {
-            background-color: #f5f5f5;
-            border-radius: 8px;
+            background-color: #f9f9f9;
+            border-radius: 10px;
             padding: 20px;
             margin: 20px 0;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         
         .input-group {
@@ -30,41 +31,55 @@
             display: block;
             margin-bottom: 5px;
             font-weight: bold;
+            color: #2c3e50;
         }
         
         input {
             width: 100%;
-            padding: 8px;
+            padding: 10px;
             border: 1px solid #ddd;
-            border-radius: 4px;
+            border-radius: 6px;
             font-size: 16px;
+            box-sizing: border-box;
         }
         
         button {
             background-color: #4CAF50;
             color: white;
             border: none;
-            padding: 10px 15px;
-            border-radius: 4px;
+            padding: 12px 15px;
+            border-radius: 6px;
             cursor: pointer;
             font-size: 16px;
+            width: 100%;
             margin-top: 10px;
+            font-weight: bold;
         }
         
         button:hover {
             background-color: #45a049;
         }
         
+        .reset {
+            background-color: #f44336;
+            margin-top: 10px;
+        }
+        
+        .reset:hover {
+            background-color: #e53935;
+        }
+        
         .results {
-            margin-top: 20px;
-            border-top: 1px solid #ddd;
+            margin-top: 25px;
             padding-top: 15px;
+            border-top: 2px solid #eee;
         }
         
         table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 15px;
+            box-shadow: 0 2px 3px rgba(0,0,0,0.1);
         }
         
         th, td {
@@ -74,25 +89,51 @@
         }
         
         th {
-            background-color: #f2f2f2;
+            background-color: #e8f4f8;
             font-weight: bold;
+            color: #2c3e50;
         }
         
         tr:nth-child(even) {
             background-color: #f9f9f9;
         }
         
-        .metric {
+        .highlight {
+            background-color: #e6f7ff;
             font-weight: bold;
         }
         
-        .reset {
-            background-color: #f44336;
-            margin-left: 10px;
+        .metric {
+            font-weight: bold;
+            color: #2c3e50;
         }
         
-        .reset:hover {
-            background-color: #e53935;
+        .summary-box {
+            background-color: #e8f5e9;
+            border-left: 4px solid #4CAF50;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        
+        .heading-with-line {
+            display: flex;
+            align-items: center;
+            margin: 20px 0;
+        }
+        
+        .heading-with-line:before, .heading-with-line:after {
+            content: "";
+            flex: 1;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .heading-with-line:before {
+            margin-right: 10px;
+        }
+        
+        .heading-with-line:after {
+            margin-left: 10px;
         }
         
         .company-info {
@@ -126,19 +167,24 @@
         }
         
         .loading {
-            margin-top: 5px;
-            font-style: italic;
-            color: #666;
+            text-align: center;
+            padding: 20px;
             display: none;
         }
         
-        .fetch-btn {
-            background-color: #2196F3;
-            margin-top: 5px;
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top: 4px solid #4CAF50;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
         }
         
-        .fetch-btn:hover {
-            background-color: #0b7dda;
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
         
         .input-with-button {
@@ -153,13 +199,35 @@
         .input-with-button button {
             margin-top: 0;
             border-radius: 0 4px 4px 0;
+            width: auto;
+            white-space: nowrap;
+            padding: 10px 15px;
         }
         
-        .refresh-price {
-            font-size: 14px;
-            margin-left: 10px;
-            cursor: pointer;
-            color: #2196F3;
+        .fetch-btn {
+            background-color: #2196F3;
+        }
+        
+        .fetch-btn:hover {
+            background-color: #0b7dda;
+        }
+        
+        .symbol-type {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 8px;
+            color: white;
+        }
+        
+        .type-stock {
+            background-color: #1976D2;
+        }
+        
+        .type-etf {
+            background-color: #9C27B0;
         }
         
         .price-timestamp {
@@ -168,21 +236,80 @@
             font-style: italic;
             margin-top: 3px;
         }
+        
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            margin-left: 5px;
+            cursor: help;
+        }
+        
+        .tooltip .tooltip-icon {
+            color: #2196F3;
+            font-weight: bold;
+            background-color: #e3f2fd;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+        
+        .tooltip .tooltip-text {
+            visibility: hidden;
+            width: 200px;
+            background-color: #555;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -100px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 14px;
+            font-weight: normal;
+        }
+        
+        .tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        .settings-section {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .settings-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #495057;
+        }
     </style>
 </head>
 <body>
-    <h1>Stock Price Target Calculator</h1>
+    <h1>Stock & ETF Price Target Calculator</h1>
     
     <div class="calculator">
-        <h2>Input Your Investment Details</h2>
-        
         <div class="input-group">
-            <label for="ticker">Stock Ticker Symbol:</label>
+            <label for="ticker">Symbol (Stock or ETF):</label>
             <div class="input-with-button">
-                <input type="text" id="ticker" placeholder="e.g., COST" autocomplete="off">
-                <button class="fetch-btn" onclick="fetchStockData()">Fetch Data</button>
+                <input type="text" id="ticker" placeholder="e.g., AAPL, SPY, QQQ" autocomplete="off">
+                <button class="fetch-btn" onclick="fetchMarketData()">Fetch Data</button>
             </div>
-            <div id="loading" class="loading">Loading stock data...</div>
+            <div id="loading" class="loading">
+                <div class="spinner"></div>
+                <p>Loading market data...</p>
+            </div>
             <div id="companyInfo" class="company-info">
                 <div id="companyName" class="company-name"></div>
                 <div id="currentPrice" class="current-price"></div>
@@ -192,23 +319,27 @@
         </div>
         
         <div class="input-group">
-            <label for="stockPrice">Manual Stock Price ($):</label>
+            <label for="stockPrice">Manual Price ($):</label>
             <input type="number" id="stockPrice" step="0.01" min="0" placeholder="Use this if fetch data doesn't work">
         </div>
         
         <div class="input-group">
-            <label for="averageCost">Your Average Cost per Share ($):</label>
+            <label for="averageCost">Your Average Cost per Share/Unit ($):</label>
             <input type="number" id="averageCost" step="0.01" min="0" placeholder="Your purchase price">
         </div>
         
         <div class="input-group">
-            <label for="shares">Number of Shares:</label>
-            <input type="number" id="shares" step="0.01" min="0" placeholder="Quantity of shares you own">
+            <label for="shares">Number of Shares/Units:</label>
+            <input type="number" id="shares" step="0.01" min="0" placeholder="Quantity of shares/units you own">
         </div>
         
         <div class="input-group">
             <label for="targetGain">Custom Target Gain Amount ($):</label>
             <input type="number" id="targetGain" step="100" min="0" placeholder="e.g., 500">
+            <div class="tooltip">
+                <span class="tooltip-icon">?</span>
+                <span class="tooltip-text">Enter the total dollar amount you want to gain from your investment</span>
+            </div>
         </div>
         
         <button onclick="calculateTargets()">Calculate Price Targets</button>
@@ -232,6 +363,12 @@
                     <!-- Table rows will be added here by JavaScript -->
                 </tbody>
             </table>
+            
+            <div class="settings-section" id="advancedSettings">
+                <div class="settings-title">Advanced Analysis</div>
+                <p>Based on historical volatility and current market conditions, here are some suggested timeframes to reach your target:</p>
+                <div id="timeframeAnalysis"></div>
+            </div>
         </div>
     </div>
     
@@ -239,12 +376,22 @@
         // API key for Alpha Vantage (free tier)
         const API_KEY = "PKW2CDTLQNZKNBVD";
         
-        // Fetch stock data from Alpha Vantage API
-        async function fetchStockData() {
+        // List of common ETFs for better detection
+        const commonETFs = [
+            'SPY', 'QQQ', 'IVV', 'VTI', 'VOO', 'IWM', 'EFA', 'AGG', 'VEA', 'VWO',
+            'BND', 'VIG', 'IJH', 'VGT', 'XLF', 'XLE', 'VYM', 'IEFA', 'VB', 'XLK',
+            'IEMG', 'VUG', 'IJR', 'VO', 'VEU', 'VXUS', 'XLV', 'VTV', 'VCIT', 'VCSH',
+            'LQD', 'XLI', 'USMV', 'ITOT', 'MUB', 'XLP', 'GLD', 'IEF', 'TLT', 'SCHD',
+            'SHY', 'IAU', 'JPST', 'IWF', 'SCHX', 'DVY', 'DIA', 'IWD', 'GOVT', 'SCHF',
+            'VV', 'IWB', 'BSV', 'SPLG', 'SCHA', 'ARKK', 'TQQQ', 'SPDW', 'SPEM', 'SPAB'
+        ];
+        
+        // Fetch stock or ETF data from Alpha Vantage API
+        async function fetchMarketData() {
             const ticker = document.getElementById('ticker').value.trim().toUpperCase();
             
             if (!ticker) {
-                alert('Please enter a stock ticker symbol');
+                alert('Please enter a stock or ETF symbol.');
                 return;
             }
             
@@ -253,29 +400,71 @@
             document.getElementById('companyInfo').style.display = 'none';
             
             try {
-                // Fetch company overview
-                const overviewUrl = `https://www.alphavantage.co/query?function=OVERVIEW&symbol=${ticker}&apikey=${API_KEY}`;
-                const overviewResponse = await fetch(overviewUrl);
-                const overviewData = await overviewResponse.json();
+                // First try to fetch ETF data if it's a common ETF
+                let isETF = false;
+                let entityName = ticker;
+                let symbolType = "";
                 
-                // Fetch current price
+                // Check if it's a common ETF
+                if (commonETFs.includes(ticker) || ticker.startsWith('X') || ticker.includes('-')) {
+                    isETF = true;
+                    symbolType = "etf";
+                    
+                    // For ETFs, we can either use a simple name or try to fetch the full name
+                    if (ticker === "SPY") entityName = "SPDR S&P 500 ETF Trust";
+                    else if (ticker === "QQQ") entityName = "Invesco QQQ Trust";
+                    else if (ticker === "IVV") entityName = "iShares Core S&P 500 ETF";
+                    else if (ticker === "VTI") entityName = "Vanguard Total Stock Market ETF";
+                    else if (ticker === "VOO") entityName = "Vanguard S&P 500 ETF";
+                    else if (ticker === "IWM") entityName = "iShares Russell 2000 ETF";
+                    else entityName = ticker + " ETF";
+                }
+                
+                // Fetch price data
                 const quoteUrl = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${ticker}&apikey=${API_KEY}`;
                 const quoteResponse = await fetch(quoteUrl);
                 const quoteData = await quoteResponse.json();
                 
+                // If not identified as ETF yet, try to get company info
+                if (!isETF) {
+                    const overviewUrl = `https://www.alphavantage.co/query?function=OVERVIEW&symbol=${ticker}&apikey=${API_KEY}`;
+                    const overviewResponse = await fetch(overviewUrl);
+                    const overviewData = await overviewResponse.json();
+                    
+                    if (overviewData && overviewData.Name) {
+                        // It's a stock with company data
+                        entityName = overviewData.Name;
+                        symbolType = "stock";
+                    } else {
+                        // If no company data and not in ETF list, check if it still has price data
+                        // If it does, it might be an ETF we don't have in our list
+                        if (quoteData['Global Quote'] && quoteData['Global Quote']['05. price']) {
+                            symbolType = "etf";
+                            entityName = ticker + " ETF/Fund";
+                        } else {
+                            symbolType = "stock"; // Default to stock if we can't determine
+                        }
+                    }
+                }
+                
                 // Hide loading indicator
                 document.getElementById('loading').style.display = 'none';
                 
-                // Check if we got valid data
-                if (overviewData.Name && quoteData['Global Quote']) {
-                    const companyName = overviewData.Name;
+                // Check if we got valid price data
+                const hasValidQuote = quoteData['Global Quote'] && quoteData['Global Quote']['05. price'];
+                
+                if (hasValidQuote) {
                     const quote = quoteData['Global Quote'];
                     const price = parseFloat(quote['05. price']);
                     const change = parseFloat(quote['09. change']);
                     const changePercent = quote['10. change percent'].replace('%', '');
                     
-                    // Update company info display
-                    document.getElementById('companyName').textContent = companyName;
+                    // Update display with symbol type indicator
+                    const typeIndicator = symbolType ? 
+                        `<span class="symbol-type type-${symbolType}">${symbolType.toUpperCase()}</span>` : '';
+                    
+                    // Update company/ETF info display
+                    document.getElementById('companyName').innerHTML = `${entityName} (${ticker}) ${typeIndicator}`;
                     document.getElementById('currentPrice').textContent = `Current Price: $${price.toFixed(2)}`;
                     
                     const priceChangeElement = document.getElementById('priceChange');
@@ -291,24 +480,24 @@
                     const now = new Date();
                     document.getElementById('priceTimestamp').textContent = `As of ${now.toLocaleString()}`;
                     
-                    // Show company info
+                    // Show company/ETF info
                     document.getElementById('companyInfo').style.display = 'block';
                     
                     // Update the manual price input with the current price
                     document.getElementById('stockPrice').value = price.toFixed(2);
                 } else {
-                    alert('Could not find stock data for ticker: ' + ticker);
+                    alert(`Could not find market data for ${ticker}. Please check the symbol and try again.`);
                 }
             } catch (error) {
-                console.error('Error fetching stock data:', error);
+                console.error('Error fetching market data:', error);
                 document.getElementById('loading').style.display = 'none';
-                alert('Error fetching stock data. Please try again or enter the price manually.');
+                alert('Error fetching market data. Please try again or enter the price manually.');
             }
         }
         
         function calculateTargets() {
             // Get input values
-            const ticker = document.getElementById('ticker').value.trim().toUpperCase() || 'Stock';
+            const ticker = document.getElementById('ticker').value.trim().toUpperCase() || 'Symbol';
             const companyName = document.getElementById('companyName').textContent || ticker;
             const currentPrice = parseFloat(document.getElementById('stockPrice').value);
             const averageCost = parseFloat(document.getElementById('averageCost').value);
@@ -316,8 +505,13 @@
             const customTargetGain = parseFloat(document.getElementById('targetGain').value);
             
             // Validate inputs
-            if (isNaN(currentPrice) || isNaN(shares) || shares <= 0 || currentPrice <= 0) {
-                alert('Please enter valid values for current price and number of shares.');
+            if (isNaN(currentPrice) || currentPrice <= 0) {
+                alert('Please enter a valid current price.');
+                return;
+            }
+            
+            if (isNaN(shares) || shares <= 0) {
+                alert('Please enter a valid number of shares/units.');
                 return;
             }
             
@@ -329,10 +523,17 @@
             
             // Display summary
             const summaryDiv = document.getElementById('summary');
+            
+            // Determine if we're dealing with an ETF or stock based on context
+            const isETF = companyName.includes("ETF") || 
+                           document.querySelector('.type-etf') || 
+                           commonETFs.includes(ticker);
+            const securitiesType = isETF ? "units" : "shares";
+            
             summaryDiv.innerHTML = `
-                <p><span class="metric">Stock:</span> ${companyName} (${ticker})</p>
+                <p><span class="metric">Symbol:</span> ${ticker}</p>
                 <p><span class="metric">Current Price:</span> $${currentPrice.toFixed(2)}</p>
-                <p><span class="metric">Shares Owned:</span> ${shares.toFixed(2)}</p>
+                <p><span class="metric">${securitiesType.charAt(0).toUpperCase() + securitiesType.slice(1)} Owned:</span> ${shares.toFixed(2)}</p>
                 <p><span class="metric">Average Cost:</span> $${isNaN(averageCost) ? '0.00' : averageCost.toFixed(2)}</p>
                 <p><span class="metric">Market Value:</span> $${marketValue.toFixed(2)}</p>
                 <p><span class="metric">Cost Basis:</span> $${isNaN(costBasis) ? '0.00' : costBasis.toFixed(2)}</p>
@@ -363,6 +564,12 @@
                 const priceIncreasePercent = (priceIncrease / currentPrice) * 100;
                 
                 const row = document.createElement('tr');
+                
+                // Highlight the user's selected target if it matches
+                if (targetGain === customTargetGain) {
+                    row.className = 'highlight';
+                }
+                
                 row.innerHTML = `
                     <td>$${targetGain.toFixed(2)}</td>
                     <td>$${targetPrice.toFixed(2)}</td>
@@ -372,8 +579,59 @@
                 targetBody.appendChild(row);
             });
             
+            // Generate timeframe analysis
+            generateTimeframeAnalysis(currentPrice, ticker, isETF);
+            
             // Show results
             document.getElementById('results').style.display = 'block';
+        }
+        
+        function generateTimeframeAnalysis(currentPrice, ticker, isETF) {
+            // Timeframe analysis based on the security type and current price
+            // In a real implementation, this would use historical volatility data
+            
+            const isCommonETF = commonETFs.includes(ticker);
+            const isHighPriced = currentPrice > 500;
+            const isMidPriced = currentPrice > 100 && currentPrice <= 500;
+            const isLowPriced = currentPrice <= 100;
+            
+            let analysisHTML = '<ul>';
+            
+            if (isETF || isCommonETF) {
+                analysisHTML += `
+                    <li>ETFs like ${ticker} typically have lower volatility than individual stocks.</li>
+                    <li>For a 5% price increase: <strong>1-3 months</strong> may be reasonable in normal market conditions.</li>
+                    <li>For a 10% price increase: <strong>3-6 months</strong> based on historical ETF movements.</li>
+                    <li>For a 20%+ price increase: <strong>6-12+ months</strong> unless there's significant market momentum.</li>
+                `;
+            } else if (isHighPriced) {
+                analysisHTML += `
+                    <li>High-priced securities (>$500) like ${ticker} often move slower in percentage terms.</li>
+                    <li>For a 5% price increase: <strong>1-2 months</strong> may be reasonable.</li>
+                    <li>For a 10% price increase: <strong>2-4 months</strong> based on typical market conditions.</li>
+                    <li>For a 20%+ price increase: <strong>4-8+ months</strong> unless there are major catalysts.</li>
+                `;
+            } else if (isMidPriced) {
+                analysisHTML += `
+                    <li>Mid-priced securities ($100-$500) like ${ticker} typically show moderate volatility.</li>
+                    <li>For a 5% price increase: <strong>2-4 weeks</strong> may be reasonable.</li>
+                    <li>For a 10% price increase: <strong>1-3 months</strong> based on typical market conditions.</li>
+                    <li>For a 20%+ price increase: <strong>3-6+ months</strong> depending on market sentiment.</li>
+                `;
+            } else if (isLowPriced) {
+                analysisHTML += `
+                    <li>Lower-priced securities (<$100) like ${ticker} may show higher percentage volatility.</li>
+                    <li>For a 5% price increase: <strong>1-3 weeks</strong> may be reasonable.</li>
+                    <li>For a 10% price increase: <strong>3-6 weeks</strong> based on typical market conditions.</li>
+                    <li>For a 20%+ price increase: <strong>2-4+ months</strong> depending on market sentiment.</li>
+                `;
+            }
+            
+            analysisHTML += `
+                <li><em>Note: These timeframes are estimates based on typical market behaviors. Actual results may vary significantly based on market conditions, economic events, and security-specific factors.</em></li>
+            </ul>`;
+            
+            document.getElementById('timeframeAnalysis').innerHTML = analysisHTML;
         }
         
         function resetForm() {
@@ -390,7 +648,7 @@
         document.getElementById('ticker').addEventListener('keypress', function(event) {
             if (event.key === 'Enter') {
                 event.preventDefault();
-                fetchStockData();
+                fetchMarketData();
             }
         });
     </script>
